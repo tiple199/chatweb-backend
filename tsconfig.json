@@ -1,12 +1,59 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "commonjs",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "types": [
+      "node"
+    ],
     "rootDir": "./src",
-    "outDir": "./dist",
+    "outDir": "dist",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "config/*": [
+        "./src/config/*"
+      ],
+      "middleware/*": [
+        "./src/middleware/*"
+      ],
+      "controllers/*": [
+        "./src/controllers/*"
+      ],
+      "services/*": [
+        "./src/services/*"
+      ],
+      "routes/*": [
+        "./src/routes/*"
+      ],
+      "validation/*": [
+        "./src/validation/*"
+      ],
+      "auth/*":[
+        "./src/modules/auth/*"
+      ],
+      "users/*":[
+        "./src/modules/users/*"
+      ],
+      "authToken/*":[
+        "./src/modules/authToken/*"
+      ],
+      "refreshToken/*":[
+        "./src/modules/refreshToken/*"
+      ],
+      "modules/*":[
+        "./src/modules/*"
+      ],
+      "utils/*":[
+        "./src/utils/*"
+      ],
+      "types/*":[
+        "./src/types/*"
+      ],
+    },
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+  },
 }
