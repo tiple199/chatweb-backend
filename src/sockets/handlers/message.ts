@@ -3,10 +3,13 @@ import { MessageModel } from "../../modules/messages/message.model";
 
 type Ack<T> = (response: { ok: true; data: T } | { ok: false; error: string }) => void;
 
+const MESSAGE_TYPES = ["text", "image", "file"] as const;
+type MessageType = (typeof MESSAGE_TYPES)[number];
+
 type SendMessagePayload = {
   conversationId: string;
   content: string;
-  type?: "text" | "image" | "file";
+  type?: string;
 };
 
 type EditMessagePayload = {
@@ -33,11 +36,14 @@ type SocketMessage = {
   createdAt: string;
   updatedAt: string;
   senderId: PopulatedSender;
-  type: "text" | "image" | "file";
+  type: MessageType;
 };
 
 const normalizeId = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 const normalizeContent = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+const normalizeMessageType = (value: unknown): MessageType => {
+  return MESSAGE_TYPES.includes(value as MessageType) ? (value as MessageType) : "text";
+};
 
 const requireJoinedRoom = (socketId: string, socketRooms: ReadonlySet<string>, roomId: string) => {
   // socket.rooms always includes its own socket.id; treat joining a room as explicit membership.
@@ -50,7 +56,14 @@ export const registerMessageHandlers = ({ io, socket }: SocketContext) => {
     async (payload: SendMessagePayload, ack?: Ack<{ message: SocketMessage }>) => {
       const conversationId = normalizeId(payload?.conversationId);
       const content = normalizeContent(payload?.content);
-      const senderId = normalizeId(socket.data?.userId);
+      const authenticatedUser = socket.data?.user as {
+        userId?: string;
+        fullName?: string;
+        avatar?: string | null;
+        email?: string;
+      } | undefined;
+      const senderId = normalizeId(authenticatedUser?.userId);
+      const messageType = normalizeMessageType(payload?.type);
 
       if (!conversationId) {
         ack?.({ ok: false, error: "Invalid conversationId" });
@@ -74,20 +87,14 @@ export const registerMessageHandlers = ({ io, socket }: SocketContext) => {
           conversationId,
           senderId,
           content,
-          type: payload.type || "text"
+          type: messageType
         });
 
-        const populatedMessage = await newMessage.populate("senderId", "fullName avatar");
-        const messageObject = populatedMessage.toObject() as unknown as {
+        const messageObject = newMessage.toObject() as unknown as {
           _id: { toString: () => string };
           conversationId: { toString: () => string };
-          senderId: {
-            _id: { toString: () => string };
-            fullName?: string;
-            avatar?: string | null;
-          };
           content: string;
-          type: "text" | "image" | "file";
+          type: MessageType;
           createdAt: Date | string;
           updatedAt: Date | string;
         };
@@ -97,9 +104,9 @@ export const registerMessageHandlers = ({ io, socket }: SocketContext) => {
           conversationId: messageObject.conversationId.toString(),
           content: messageObject.content,
           senderId: {
-            _id: messageObject.senderId._id.toString(),
-            fullName: messageObject.senderId.fullName,
-            avatar: messageObject.senderId.avatar ?? null
+            _id: senderId,
+            fullName: authenticatedUser?.fullName,
+            avatar: authenticatedUser?.avatar ?? null
           },
           createdAt: new Date(messageObject.createdAt).toISOString(),
           updatedAt: new Date(messageObject.updatedAt).toISOString(),

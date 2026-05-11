@@ -5,6 +5,13 @@ import { registerRoomHandlers } from "./handlers/room";
 import { registerSeenHandlers } from "./handlers/seen";
 import { registerTypingHandlers } from "./handlers/typing";
 
+type SocketUser = {
+  userId: string;
+  fullName?: string;
+  avatar?: string | null;
+  email?: string;
+};
+
 export type SocketContext = {
   io: Server;
   socket: Socket;
@@ -25,14 +32,19 @@ export const initSockets = (io: Server) => {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET) as { userId?: string };
+      const decoded = jwt.verify(token, process.env.JWT_SECRET) as SocketUser;
 
       if (!decoded?.userId) {
         next(new Error("Invalid token"));
         return;
       }
 
-      socket.data.userId = decoded.userId;
+      socket.data.user = {
+        userId: decoded.userId,
+        fullName: decoded.fullName,
+        avatar: decoded.avatar ?? null,
+        email: decoded.email
+      } satisfies SocketUser;
       next();
     } catch {
       next(new Error("Invalid token"));
@@ -40,7 +52,12 @@ export const initSockets = (io: Server) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("Client connected:", socket.data.userId);
+    console.log("Client connected:", socket.data.user?.userId);
+
+     socket.on("disconnect", () => {
+      console.log("Disconnected:", socket.data.user?.userId);
+    });
+
 
     const ctx: SocketContext = { io, socket };
 
@@ -48,9 +65,5 @@ export const initSockets = (io: Server) => {
     registerMessageHandlers(ctx);
     registerTypingHandlers(ctx);
     registerSeenHandlers(ctx);
-  });
-
-  io.on("disconnect", (socket) => {
-    console.log("Disconnected:", socket.data.userId);
   });
 };
