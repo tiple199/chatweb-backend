@@ -1,59 +1,43 @@
-// import http from "http";
-// import { Server } from "socket.io";
-// import dotenv from "dotenv";
-// import { app } from "./app";
-// import { connectDB } from "./config/db";
-
+import http from "http";
+import { Server } from "socket.io";
+import dotenv from "dotenv";
 import { app } from "./app";
 import { connectDB } from "./config/db";
+import { chatSocket } from "./sockets/chat.socket"; // Import hàm socket của bạn
 
-// dotenv.config();
+dotenv.config();
 
-// const startServer = async () => {
-//   await connectDB();
+const startServer = async () => {
+  try {
+    // 1. Kết nối Cơ sở dữ liệu MongoDB
+    await connectDB();
+    console.log("Database connected successfully");
 
-//   const server = http.createServer(app);
+    // 2. Tạo HTTP Server từ Express App
+    const server = http.createServer(app);
 
-//   const io = new Server(server, {
-//     cors: {
-//       origin: "*"
-//     }
-//   });
+    // 3. Khởi tạo Socket.IO với cấu hình CORS
+    const io = new Server(server, {
+      cors: {
+        origin: "*", // Trong thực tế nên để FRONTEND_URL từ .env
+        methods: ["GET", "POST"]
+      }
+    });
 
-//   io.on("connection", (socket) => {
-//     console.log("Client connected:", socket.id);
+    // 4. Kích hoạt logic Chat Real-time và lưu lịch sử
+    chatSocket(io);
 
-//     socket.on("join_conversation", (conversationId: string) => {
-//       socket.join(conversationId);
-//     });
+    // 5. Lắng nghe tại cổng chỉ định
+    const port = Number(process.env.PORT) || 5000;
+    server.listen(port, () => {
+      console.log(`Server running on port ${port}`);
+    });
 
-//     socket.on("send_message", async (payload) => {
-//       io.to(payload.conversationId).emit("receive_message", payload);
-//     });
-
-//     socket.on("disconnect", () => {
-//       console.log("Client disconnected:", socket.id);
-//     });
-//   });
-
-//   const port = Number(process.env.PORT) || 5000;
-//   server.listen(port, () => {
-//     console.log(`Server running on port ${port}`);
-//   });
-// };
-
-// startServer().catch((error) => {
-//   console.error(error);
-//   process.exit(1);
-// });
-
-connectDB().then(() => {
-    console.log("Database connected");
-}).catch((error) => {
-    console.error(error);
+  } catch (error) {
+    console.error("Failed to start server:", error);
     process.exit(1);
-});
-const port = Number(process.env.PORT) || 5000;
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
+  }
+};
+
+// Khởi chạy hệ thống
+startServer();

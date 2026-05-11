@@ -4,21 +4,21 @@ import { emailSchema, loginSchema, refreshTokenSchema, registerSchema, resetPass
 import { forgotPasswordService, loginService, logoutService, refreshTokenService, registerService, resetPasswordService, sendOtpService } from "./auth.service";
 import { sendOTPEmail, sendResetPasswordEmail } from "@/utils/mailer";
 import { delay } from "@/utils/share";
+import { UserModel } from "../users/user.model"; // Đảm bảo đường dẫn này đúng với project của bạn
 
-
-const registerController = async (req:Request,res:Response) => {
+const registerController = async (req: Request, res: Response) => {
     const validation = await registerSchema.safeParse(req.body);
-    if(!validation.success){
+    if (!validation.success) {
         const errorZod = validation.error.issues;
         const seenFields = new Set<string>();
         const firstErrors = errorZod
-        .filter((err) => {
-            const field = err.path[0] as string;
-            if(seenFields.has(field)) return false;
-            seenFields.add(field);
-            return true;
-        })
-        .map((err) => ({
+            .filter((err) => {
+                const field = err.path[0] as string;
+                if (seenFields.has(field)) return false;
+                seenFields.add(field);
+                return true;
+            })
+            .map((err) => ({
                 field: String(err.path[0]),
                 message: err.message
             }));
@@ -26,30 +26,28 @@ const registerController = async (req:Request,res:Response) => {
         throw new AppError("Validation failed.", 400, firstErrors);
     }
 
-    const {email, password,fullName, otp} = validation.data;
-
+    const { email, password, fullName, otp } = validation.data;
     await registerService(email, password, fullName, otp);
-    
+
     return res.status(200).json({
         success: true,
         message: "User registered successfully",
     })
-    
 }
 
-const loginController = async (req:Request,res:Response) => {
+const loginController = async (req: Request, res: Response) => {
     const validation = await loginSchema.safeParse(req.body);
-    if(!validation.success){
+    if (!validation.success) {
         const errorZod = validation.error.issues;
         const seenFields = new Set<string>();
         const firstErrors = errorZod
-        .filter((err) => {
-            const field = err.path[0] as string;
-            if(seenFields.has(field)) return false;
-            seenFields.add(field);
-            return true;
-        })
-        .map((err) => ({
+            .filter((err) => {
+                const field = err.path[0] as string;
+                if (seenFields.has(field)) return false;
+                seenFields.add(field);
+                return true;
+            })
+            .map((err) => ({
                 field: String(err.path[0]),
                 message: err.message
             }));
@@ -57,34 +55,45 @@ const loginController = async (req:Request,res:Response) => {
         throw new AppError("Validation failed.", 400, firstErrors);
     }
 
-    const {email, password} = validation.data;
+    const { email, password } = validation.data;
+    const { accessToken, refreshToken } = await loginService(email, password);
 
-    const {accessToken,refreshToken} = await loginService(email, password);
-    
+    // Lấy thêm thông tin user để trả về cho Frontend lưu vào Store
+    const user = await UserModel.findOne({ email }).select("-password");
+
+    if (!user) {
+        throw new AppError("User not found.", 404);
+    }
+
     return res.status(200).json({
         success: true,
         message: "User logged in successfully",
         data: {
             accessToken,
             refreshToken,
+            user: {
+                _id: user._id,
+                fullName: user.fullName, // Đồng bộ fullName
+                email: user.email,
+                avatar: user.avatar || "" // Trả về link avatar hoặc chuỗi rỗng
+            }
         }
     })
-    
 }
 
-const sendOtpController = async (req:Request,res:Response) => {
+const sendOtpController = async (req: Request, res: Response) => {
     const validation = await emailSchema.safeParse(req.body.email);
-    if(!validation.success){
+    if (!validation.success) {
         const errorZod = validation.error.issues;
         const seenFields = new Set<string>();
         const firstErrors = errorZod
-        .filter((err) => {
-            const field = err.path[0] as string;
-            if(seenFields.has(field)) return false;
-            seenFields.add(field);
-            return true;
-        })
-        .map((err) => ({
+            .filter((err) => {
+                const field = err.path[0] as string;
+                if (seenFields.has(field)) return false;
+                seenFields.add(field);
+                return true;
+            })
+            .map((err) => ({
                 field: String(err.path[0]),
                 message: err.message
             }));
@@ -93,10 +102,8 @@ const sendOtpController = async (req:Request,res:Response) => {
     }
 
     const email = validation.data;
-
     const result = await sendOtpService(email);
-    
-    sendOTPEmail(email,result.token);
+    sendOTPEmail(email, result.token);
 
     await delay(2000);
 
@@ -104,22 +111,21 @@ const sendOtpController = async (req:Request,res:Response) => {
         success: true,
         message: "OTP sent successfully",
     })
-    
 }
 
-const forgotPasswordController = async (req:Request,res:Response) => {
+const forgotPasswordController = async (req: Request, res: Response) => {
     const validation = await emailSchema.safeParse(req.body.email);
-    if(!validation.success){
+    if (!validation.success) {
         const errorZod = validation.error.issues;
         const seenFields = new Set<string>();
         const firstErrors = errorZod
-        .filter((err) => {
-            const field = err.path[0] as string;
-            if(seenFields.has(field)) return false;
-            seenFields.add(field);
-            return true;
-        })
-        .map((err) => ({
+            .filter((err) => {
+                const field = err.path[0] as string;
+                if (seenFields.has(field)) return false;
+                seenFields.add(field);
+                return true;
+            })
+            .map((err) => ({
                 field: String(err.path[0]),
                 message: err.message
             }));
@@ -128,10 +134,8 @@ const forgotPasswordController = async (req:Request,res:Response) => {
     }
 
     const email = validation.data;
-
     const result = await forgotPasswordService(email);
-    
-    sendResetPasswordEmail(email,result.token);
+    sendResetPasswordEmail(email, result.token);
 
     await delay(2000);
 
@@ -139,34 +143,33 @@ const forgotPasswordController = async (req:Request,res:Response) => {
         success: true,
         message: "Reset password email sent successfully"
     })
-    
 }
 
-const resetPasswordController = async (req:Request,res:Response) => {
+const resetPasswordController = async (req: Request, res: Response) => {
     const token = req.params.token as string;
     if (!token) {
-        throw new AppError("Token is required", 400, [{field: "token", message: "Token is required"}]);
+        throw new AppError("Token is required", 400, [{ field: "token", message: "Token is required" }]);
     }
     const validation = await resetPasswordSchema.safeParse(req.body);
-    if(!validation.success){
+    if (!validation.success) {
         const errorZod = validation.error.issues;
         const seenFields = new Set<string>();
         const firstErrors = errorZod
-        .filter((err) => {
-            const field = err.path[0] as string;
-            if(seenFields.has(field)) return false;
-            seenFields.add(field);
-            return true;
-        })
-        .map((err) => ({
+            .filter((err) => {
+                const field = err.path[0] as string;
+                if (seenFields.has(field)) return false;
+                seenFields.add(field);
+                return true;
+            })
+            .map((err) => ({
                 field: String(err.path[0]),
                 message: err.message
             }));
 
         throw new AppError("Validation failed.", 400, firstErrors);
     }
-    
-    await resetPasswordService(token,validation.data.password);
+
+    await resetPasswordService(token, validation.data.password);
 
     return res.status(200).json({
         success: true,
@@ -174,15 +177,15 @@ const resetPasswordController = async (req:Request,res:Response) => {
     })
 }
 
-const refreshTokenController = async (req:Request,res:Response) => {
+const refreshTokenController = async (req: Request, res: Response) => {
     const { refreshToken } = req.body;
     const validation = await refreshTokenSchema.safeParseAsync(refreshToken);
-    if(!validation.success) {
+    if (!validation.success) {
         const errorZod = validation.error.issues;
-        const firstErrors = errorZod            .map((err) => ({
-                field: String(err.path[0] ?? "general"),
-                message: err.message
-            }));
+        const firstErrors = errorZod.map((err) => ({
+            field: String(err.path[0] ?? "general"),
+            message: err.message
+        }));
         throw new AppError("Validation failed.", 400, firstErrors);
     }
 
@@ -197,20 +200,20 @@ const refreshTokenController = async (req:Request,res:Response) => {
     });
 }
 
-const logoutController = async (req:Request,res:Response) => {
-    const {refreshToken} = req.body;
+const logoutController = async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
     const validation = await refreshTokenSchema.safeParseAsync(refreshToken);
-    if(!validation.success) {
+    if (!validation.success) {
         const errorZod = validation.error.issues;
-        const firstErrors = errorZod            .map((err) => ({
-                field: String(err.path[0] ?? "general"),
-                message: err.message
-            }));
+        const firstErrors = errorZod.map((err) => ({
+            field: String(err.path[0] ?? "general"),
+            message: err.message
+        }));
         throw new AppError("Validation failed.", 400, firstErrors);
     }
     const userId = req.user?.userId as string;
-    
-    await logoutService(userId,refreshToken);
+
+    await logoutService(userId, refreshToken);
 
     return res.status(200).json({
         success: true,
@@ -218,4 +221,12 @@ const logoutController = async (req:Request,res:Response) => {
     })
 }
 
-export { registerController,loginController,sendOtpController,forgotPasswordController,resetPasswordController,refreshTokenController,logoutController}
+export {
+    registerController,
+    loginController,
+    sendOtpController,
+    forgotPasswordController,
+    resetPasswordController,
+    refreshTokenController,
+    logoutController
+}
