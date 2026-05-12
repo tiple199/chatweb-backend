@@ -1,10 +1,15 @@
 import express from "express";
 import cors from "cors";
+
 import path from "path"; // Import để xử lý đường dẫn thư mục
 import errorHandler from "./middlewares/error.middleware";
+
 import authRoute from "./modules/auth/auth.route";
 import userRoute from "./modules/users/user.route";
 import messageRoute from "./modules/messages/messages.routes"; 
+
+import searchRoute from "./modules/search/search.route";
+import friendRoute from "./modules/friend/friend.route";
 
 export const app = express();
 
@@ -23,6 +28,8 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // 3. Khai báo các Route
 authRoute(app);
 userRoute(app);
+app.use("/api/search", searchRoute);
+app.use("/api/friend", friendRoute);
 messageRoute(app); 
 
 // 4. Xử lý lỗi 404 cho các Endpoint không tồn tại
