@@ -68,6 +68,7 @@ export const registerMessageHandlers = ({ io, socket }: SocketContext) => {
         ack?.({ ok: false, error: "Unauthorized" });
         return;
       }
+    
 
       try {
         const newMessage = await MessageModel.create({

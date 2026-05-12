@@ -11,6 +11,7 @@ export type SocketContext = {
 };
 
 export const initSockets = (io: Server) => {
+  console.log("Initializing sockets...");
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
 
@@ -36,7 +37,7 @@ export const initSockets = (io: Server) => {
       next();
     } catch {
       next(new Error("Invalid token"));
-    }
+    } 
   });
 
   io.on("connection", (socket) => {

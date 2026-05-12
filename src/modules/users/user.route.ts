@@ -1,7 +1,7 @@
 import express, { Express } from "express";
 import { AsyncHandler } from "@/types/asyncHandler";
 import asyncHandler from "@/utils/asyncHandle";
-import { getUser, updateAvatar } from "./user.controller"; // Import thêm updateAvatar
+import { getUser, updateAvatar, searchUsers} from "./user.controller"; // Import thêm updateAvatar
 import { checkValidJWT } from "@/middlewares/jwt.middleware";
 import { uploadLocal } from "@/config/multer"; // Import middleware upload file
 
@@ -21,7 +21,10 @@ const userRoute = (app: Express) => {
         updateAvatar
     );
 
+    router.get("/search", checkValidJWT, searchUsers);
+
     app.use("/api/user", router);
+
 }
 
 export default userRoute;

@@ -81,4 +81,26 @@ const updateAvatar = asyncHandler(async (req: Request, res: Response) => {
     });
 });
 
-export { getUser, updateAvatar };
+
+const searchUsers = asyncHandler(async (req: Request, res: Response) => {
+    const query = req.query.query as string;
+    if (!query) {
+        throw new AppError("Query parameter is required.", 400);
+    }
+
+    // Tìm kiếm người dùng theo fullName hoặc email (case-insensitive)
+    const users = await UserModel.find({
+        $or: [
+            { fullName: { $regex: query, $options: "i" } },
+            { email: { $regex: query, $options: "i" } }
+        ]
+    }).select("-password"); // Không trả về password
+
+    return res.status(200).json({
+        success: true,
+        message: "Search results",
+        data: { users }
+    });
+});
+
+export { getUser, updateAvatar, searchUsers};

@@ -9,7 +9,11 @@ import userRoute from "./modules/users/user.route";
 import messageRoute from "./modules/messages/messages.routes"; 
 
 import searchRoute from "./modules/search/search.route";
+import conversationRoute from "./modules/conversations/conversation.route";
 import friendRoute from "./modules/friend/friend.route";
+
+//debug
+import debugRoute from "./modules/.debug/debug.route";
 
 export const app = express();
 
@@ -28,9 +32,13 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // 3. Khai báo các Route
 authRoute(app);
 userRoute(app);
+conversationRoute(app);
 app.use("/api/search", searchRoute);
 app.use("/api/friend", friendRoute);
 messageRoute(app); 
+
+//debug
+debugRoute(app);
 
 // 4. Xử lý lỗi 404 cho các Endpoint không tồn tại
 app.use((req, res) => {

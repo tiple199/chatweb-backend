@@ -1,7 +1,7 @@
 import { InferSchemaType, model, Schema } from "mongoose";
 
 
-const authTokenSchema = new Schema(
+const authTokenSchema = new Schema( 
     {
         email: {type:String,required:true},
         type: {type:String,
