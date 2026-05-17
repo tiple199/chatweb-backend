@@ -43,11 +43,11 @@ export const searchService = async (
    * GET USER CONVERSATIONS
    */
   const conversations = await ConversationModel.find({
-    members: userId
+    users: userId
   }).select("_id");
 
   const conversationIds = conversations.map(
-    conversation => conversation._id
+    (conversation: any) => conversation._id
   );
 
   /**

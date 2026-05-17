@@ -13,7 +13,7 @@ export const getHistory = asyncHandler(async (req: Request, res: Response) => {
   if (!conversationId) {
     return res.status(400).json({ 
       success: false, 
-      message: "Thiếu Conversation ID",
+      message: "Missing Conversation ID",
       data: null
     });
   }
@@ -22,7 +22,7 @@ export const getHistory = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ 
       success: false, 
-      message: "Bạn cần đăng nhập để thực hiện hành động này",
+      message: "You need to login to perform this action",
       data: null
     });
   }
@@ -33,40 +33,40 @@ export const getHistory = asyncHandler(async (req: Request, res: Response) => {
   if (!conversation) {
     return res.status(404).json({ 
       success: false, 
-      message: "Cuộc hội thoại không tồn tại",
+      message: "Conversation does not exist",
       data: null
     });
   }
 
-  // Kiểm tra quyền truy cập (Dùng trường 'members' theo Model)
-  const isMember = conversation.members.some(
-    (memberId: any) => memberId.toString() === req.user!.userId
+  // Check access permission (using 'users' field from Model)
+  const isMember = conversation.users.some(
+    (userId: any) => userId.toString() === req.user!.userId
   );
 
   if (!isMember) {
     return res.status(403).json({ 
       success: false, 
-      message: "Bạn không có quyền truy cập hội thoại này",
+      message: "You do not have permission to access this conversation",
       data: null
     });
   }
 
-  // Gọi service lấy dữ liệu
+  // Call service to get data
   const result = await messageService.getHistoryByConversation(conversationId, page, limit);
 
-  // Validate page không vượt totalPages
+  // Validate page does not exceed totalPages
   if (page > result.totalPages && result.totalPages > 0) {
     return res.status(400).json({ 
       success: false, 
-      message: `Trang không tồn tại. Tối đa ${result.totalPages} trang`,
+      message: `Page does not exist. Maximum ${result.totalPages} pages`,
       data: null
     });
   }
 
-  // Unify response format: tất cả có 'data' wrapper
+  // Unify response format with 'data' wrapper
   res.status(200).json({
     success: true,
-    message: "Lấy lịch sử tin nhắn thành công",
+    message: "Fetched message history successfully",
     data: result
   });
 });

@@ -73,22 +73,22 @@ export const registerMessageHandlers = ({ io, socket }: SocketContext) => {
       try {
         const newMessage = await MessageModel.create({
           conversationId,
-          senderId,
+          sender: senderId,
           content,
-          type: payload.type || "text"
+          messageType: payload.type || "text"
         });
 
-        const populatedMessage = await newMessage.populate("senderId", "fullName avatar");
+        const populatedMessage = await newMessage.populate("sender", "fullName avatar");
         const messageObject = populatedMessage.toObject() as unknown as {
           _id: { toString: () => string };
           conversationId: { toString: () => string };
-          senderId: {
+          sender: {
             _id: { toString: () => string };
             fullName?: string;
             avatar?: string | null;
           };
           content: string;
-          type: "text" | "image" | "file";
+          messageType: "text" | "image" | "file";
           createdAt: Date | string;
           updatedAt: Date | string;
         };
@@ -98,13 +98,13 @@ export const registerMessageHandlers = ({ io, socket }: SocketContext) => {
           conversationId: messageObject.conversationId.toString(),
           content: messageObject.content,
           senderId: {
-            _id: messageObject.senderId._id.toString(),
-            fullName: messageObject.senderId.fullName,
-            avatar: messageObject.senderId.avatar ?? null
+            _id: messageObject.sender._id.toString(),
+            fullName: messageObject.sender.fullName,
+            avatar: messageObject.sender.avatar ?? null
           },
           createdAt: new Date(messageObject.createdAt).toISOString(),
           updatedAt: new Date(messageObject.updatedAt).toISOString(),
-          type: messageObject.type
+          type: messageObject.messageType
         };
 
         io.to(conversationId).emit("receive_message", message);

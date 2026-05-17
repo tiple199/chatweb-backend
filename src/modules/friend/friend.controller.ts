@@ -55,12 +55,12 @@ export const acceptFriendRequest = async (req: Request, res: Response) => {
       await acceptFriendRequestService(requestId);
 
     req.io?.to(request.requester.toString()).emit("friend_accepted", {
-      conversationId: conversation._id
+      conversationId: (conversation as any)._id
     });
 
     return res.json({
       message: "Accepted",
-      conversationId: conversation._id
+      conversationId: (conversation as any)._id
     });
   } catch (err) {
     return res.status(400).json({ message: getErrorMessage(err) });

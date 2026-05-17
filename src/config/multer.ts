@@ -21,10 +21,10 @@ const storage = multer.diskStorage({
   }
 });
 
-const fileFilter = (_req: Request, file: Express.Multer.File, cb: (error: Error | null, acceptFile: boolean) => void) => {
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: any) => {
   // Validate MIME type
   if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-    return cb(new Error(`Chỉ hỗ trợ các định dạng ảnh: ${ALLOWED_MIME_TYPES.join(', ')}`), false);
+    return cb(new Error(`Only image formats supported: ${ALLOWED_MIME_TYPES.join(', ')}`));
   }
   cb(null, true);
 };

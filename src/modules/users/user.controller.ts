@@ -2,11 +2,12 @@ import AppError from "@/utils/appError";
 import { Request, Response } from "express";
 import { UserModel } from "./user.model";
 import asyncHandler from "@/utils/asyncHandle";
+import { AuthRequest } from "@/types/custom";
 import fs from "fs";
 import path from "path";
 
 // API lấy profile người dùng
-const getUser = (req: Request, res: Response) => {
+const getUser = (req: AuthRequest, res: Response) => {
     if (!req.user) {
         throw new AppError("User not authenticated.", 401);
     }
@@ -18,7 +19,7 @@ const getUser = (req: Request, res: Response) => {
 }
 
 // API cập nhật ảnh đại diện
-const updateAvatar = asyncHandler(async (req: Request, res: Response) => {
+const updateAvatar = asyncHandler(async (req: AuthRequest, res: Response) => {
     // 1. Kiểm tra xác thực
     if (!req.user) {
         throw new AppError("User not authenticated.", 401);

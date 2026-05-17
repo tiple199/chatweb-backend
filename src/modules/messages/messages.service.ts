@@ -1,10 +1,10 @@
 import { MessageModel } from "./message.model";
 
 /**
- * Lấy lịch sử tin nhắn có phân trang
- * @param conversationId ID cuộc hội thoại
- * @param page Trang hiện tại
- * @param limit Số lượng tin mỗi trang
+ * Get message history with pagination
+ * @param conversationId Conversation ID
+ * @param page Current page
+ * @param limit Messages per page
  */
 export const getHistoryByConversation = async (
   conversationId: string, 
@@ -13,19 +13,19 @@ export const getHistoryByConversation = async (
 ) => {
   const skip = (page - 1) * limit;
 
-  // Lấy danh sách tin nhắn, sắp xếp mới nhất trước để phân trang chính xác
+  // Get messages sorted by newest first for pagination
   const messages = await MessageModel.find({ conversationId })
     .sort({ createdAt: -1 }) 
     .skip(skip)
     .limit(limit)
-    .populate("senderId", "fullName avatar")
-    .lean(); // Dùng lean để trả về object JS thuần, tăng tốc độ
+    .populate("sender", "fullName avatar")
+    .lean(); // Use lean for plain JS objects, faster response
 
-  // Đếm tổng số tin nhắn để tính tổng số trang
+  // Count total messages to calculate total pages
   const totalMessages = await MessageModel.countDocuments({ conversationId });
 
   return {
-    // Đảo ngược mảng để tin nhắn cũ ở trên, tin mới ở dưới (đúng UI Chat)
+    // Reverse to show oldest at top, newest at bottom (correct chat UI)
     messages: messages.reverse(), 
     currentPage: page,
     totalPages: Math.ceil(totalMessages / limit),

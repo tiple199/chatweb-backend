@@ -38,8 +38,9 @@ export const acceptFriendRequestService = async (requestId: string) => {
   await request.save();
 
   const conversation = await ConversationModel.create({
-    type: "private",
-    members: [request.requester, request.recipient]
+    chatName: "Sender",
+    isGroupChat: false,
+    users: [request.requester, request.recipient]
   });
 
   return { request, conversation };

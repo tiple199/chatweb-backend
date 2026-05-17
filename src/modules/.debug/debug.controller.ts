@@ -16,7 +16,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
 //conversations
 export const getAllConversations = async (req: Request, res: Response) => {
-    const conversations = await ConversationModel.find().populate("members", "fullName email avatar").populate("lastMessageId");
+    const conversations = await ConversationModel.find().populate("users", "fullName email avatar").populate("latestMessage");
     return res.status(200).json({
         success: true,
         message: "List of all conversations",  
