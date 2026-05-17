@@ -11,7 +11,7 @@ const isEmailExists = async (email: string) => {
     return !!emailExists;
 }
 // function rate limit
-const handleRateLimit = async (email: string,token: string,time: number,type: string) => {
+const handleRateLimit = async (email: string, token: string, time: number, type: "RESET_PASSWORD" | "VERIFY_EMAIL") => {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
     const count = await AuthTokenModel.countDocuments({
@@ -20,7 +20,7 @@ const handleRateLimit = async (email: string,token: string,time: number,type: st
         createdAt: {
             $gte: oneHourAgo
         }
-    });
+    } as any);
 
     if (count >= 5) {
       throw new AppError("Too many password reset requests. Please try again later.", 429);
@@ -28,8 +28,8 @@ const handleRateLimit = async (email: string,token: string,time: number,type: st
 
     const latest = await AuthTokenModel.findOne({
         email,
-        type: type
-    }).sort({ createdAt: "desc" });
+        type,
+    } as any).sort({ createdAt: "desc" });
 
     if (
         latest &&
@@ -40,15 +40,15 @@ const handleRateLimit = async (email: string,token: string,time: number,type: st
 
     await AuthTokenModel.updateMany({
         email,
-        type: type,
+        type,
         isUsed: false
     },{
-        isUsed: true
+        $set: { isUsed: true }
     });
 
     const result = await AuthTokenModel.create({
-        token: token,
-        type: type,
+        token,
+        type,
         email,
         expiresAt: new Date(Date.now() + time * 60 * 1000)
     })
@@ -62,7 +62,7 @@ const registerService = async (email: string, password: string, fullName: string
     const emailExists = await UserModel.findOne({ email });
     if (emailExists) {
         throw new AppError("Email already exists", 400);
-    }
+    } 
 
     const otpRecord = await AuthTokenModel.find({
         email,
@@ -90,11 +90,6 @@ const registerService = async (email: string, password: string, fullName: string
     return {
         message: "User registered successfully",
     }
-
-    
-    
-
-
 
     
 }
@@ -135,8 +130,6 @@ const sendOtpService = async (email: string) => {
     const time = +process.env.TIME_LIMIT_OTP!;
 
     const result = handleRateLimit(email, otp, time, "VERIFY_EMAIL");
-
-  
 
   return result;
     
