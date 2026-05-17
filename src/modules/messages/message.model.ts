@@ -1,30 +1,28 @@
-import { Schema, model, InferSchemaType } from "mongoose";
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
-const messageSchema = new Schema(
+export interface IMessage extends Document {
+  sender: Types.ObjectId;
+  content: string;
+  conversationId: Types.ObjectId;
+  messageType: 'text' | 'image' | 'video' | 'file';
+  fileUrl?: string; // Link file/ảnh/video lưu trên Cloudinary/S3
+  fileName?: string;
+}
+
+const messageSchema = new Schema<IMessage>(
   {
-    conversationId: {
-      type: Schema.Types.ObjectId,
-      ref: "Conversation",
-      required: true,
-      index: true
+    sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    content: { type: String, trim: true },
+    conversationId: { type: Schema.Types.ObjectId, ref: 'Conversation', required: true },
+    messageType: { 
+      type: String, 
+      enum: ['text', 'image', 'video', 'file'], 
+      default: 'text' 
     },
-    senderId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true
-    },
-    content: { type: String, required: true, trim: true },
-    type: {
-      type: String,
-      enum: ["text", "image", "file"],
-      default: "text"
-    },
-    seenBy: [{ type: Schema.Types.ObjectId, ref: "User" }]
+    fileUrl: { type: String },
+    fileName: { type: String }
   },
   { timestamps: true }
 );
 
-messageSchema.index({ conversationId: 1, createdAt: -1 });
-
-export type MessageDocument = InferSchemaType<typeof messageSchema>;
-export const MessageModel = model("Message", messageSchema);
+export default mongoose.model<IMessage>('Message', messageSchema);
