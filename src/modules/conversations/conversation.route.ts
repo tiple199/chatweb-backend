@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { accessChat, createGroup, createPoll, votePoll, getUserConversations } from './conversation.controller';
+import { accessChat, createGroup, createPoll, votePoll, getUserConversations, updateConversation, getParticipants, addMember, removeMember } from './conversation.controller';
 import { checkValidJWT } from '../../middlewares/jwt.middleware';
 
 const conversationRoute = (app: Express) => {
@@ -17,6 +17,18 @@ const conversationRoute = (app: Express) => {
   
   // Vote on a poll
   app.post('/api/conversations/poll/vote', checkValidJWT, votePoll);
+
+  // Update conversation details (e.g. rename group)
+  app.put('/api/conversations/:id', checkValidJWT, updateConversation);
+
+  // Get participants of a conversation
+  app.get('/api/conversations/:conversationId/participants', checkValidJWT, getParticipants);
+
+  // Add a member to group
+  app.post('/api/conversations/:conversationId/participants', checkValidJWT, addMember);
+
+  // Remove a member from group
+  app.delete('/api/conversations/:conversationId/participants/:userId', checkValidJWT, removeMember);
 };
 
 export default conversationRoute;

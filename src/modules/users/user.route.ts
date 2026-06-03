@@ -3,7 +3,7 @@ import { AsyncHandler } from "@/types/asyncHandler";
 import asyncHandler from "@/utils/asyncHandle";
 import { getUser, updateAvatar, searchUsers} from "./user.controller"; // Import thêm updateAvatar
 import { checkValidJWT } from "@/middlewares/jwt.middleware";
-import { uploadLocal } from "@/config/multer"; // Import middleware upload file
+import { uploadLocal } from "@/config/multer"; // Import middleware upload file local
 
 const router = express.Router();
 const wrap = (fn: AsyncHandler) => asyncHandler(fn);

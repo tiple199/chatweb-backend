@@ -1,5 +1,6 @@
 import type { SocketContext } from "../index";
-import { MessageModel } from "../../modules/messages/message.model";
+import { messageService } from "../../modules/messages/message.service";
+import { ConversationModel } from "../../modules/conversations/conversation.model";
 
 type Ack<T> = (response: { ok: true; data: T } | { ok: false; error: string }) => void;
 
@@ -71,27 +72,28 @@ export const registerMessageHandlers = ({ io, socket }: SocketContext) => {
     
 
       try {
-        const newMessage = await MessageModel.create({
-          conversationId,
-          sender: senderId,
-          content,
-          messageType: payload.type || "text"
-        });
+        const conversation = await ConversationModel.findById(conversationId);
+        if (!conversation) {
+          ack?.({ ok: false, error: "Conversation not found" });
+          return;
+        }
 
-        const populatedMessage = await newMessage.populate("sender", "fullName avatar");
-        const messageObject = populatedMessage.toObject() as unknown as {
-          _id: { toString: () => string };
-          conversationId: { toString: () => string };
-          sender: {
-            _id: { toString: () => string };
-            fullName?: string;
-            avatar?: string | null;
-          };
-          content: string;
-          messageType: "text" | "image" | "file";
-          createdAt: Date | string;
-          updatedAt: Date | string;
-        };
+        const isMember = conversation.users.some(
+          (userId: any) => userId.toString() === senderId
+        );
+        if (!isMember) {
+          ack?.({ ok: false, error: "Unauthorized" });
+          return;
+        }
+
+        const populatedMessage = await messageService.sendMessage(
+          senderId,
+          conversationId,
+          content,
+          payload.type || "text"
+        );
+
+        const messageObject = populatedMessage.toObject() as any;
 
         const message: SocketMessage = {
           _id: messageObject._id.toString(),

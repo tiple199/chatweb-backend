@@ -20,8 +20,9 @@ export const getUserConversationsService = async (userId: string) => {
       conversationId: conversation._id.toString(),
       chatName:
         !conversation.isGroupChat && otherUser
-          ? otherUser.fullName || 'User'
-          : conversation.chatName || 'Conversation',
+          ? otherUser.fullName || 'Người dùng'
+          : conversation.chatName || 'Không xác định',
+      otherUserId: !conversation.isGroupChat && otherUser ? otherUser._id.toString() : null,
       isGroupChat: conversation.isGroupChat,
       groupAdmins: conversation.groupAdmins || [],
       latestMessage: conversation.latestMessage,
@@ -155,5 +156,56 @@ export const conversationService = {
 
     await chat.save();
     return chat;
+  },
+
+  // Update conversation
+  updateConversation: async (chatId: string, data: any, requesterId: string) => {
+    const chat = await Conversation.findById(chatId);
+    if (!chat) throw new AppError('Conversation not found', 404);
+    
+    // Check if requester is in chat
+    if (!chat.users.some(u => u.toString() === requesterId)) {
+      throw new AppError('You are not in this conversation', 403);
+    }
+    
+    const updated = await Conversation.findByIdAndUpdate(
+      chatId,
+      { $set: data },
+      { new: true }
+    ).populate('users', '-password');
+    return updated;
+  },
+
+  // Add member to group
+  addMember: async (chatId: string, userIdToAdd: string, requesterId: string) => {
+    const chat = await Conversation.findById(chatId);
+    if (!chat || !chat.isGroupChat) throw new AppError('Group chat not found', 404);
+    
+    if (!chat.users.some(u => u.toString() === requesterId)) {
+      throw new AppError('You are not in this group', 403);
+    }
+    if (chat.users.some(u => u.toString() === userIdToAdd)) {
+      throw new AppError('User is already in group', 400);
+    }
+    
+    const updated = await Conversation.findByIdAndUpdate(
+      chatId,
+      { $push: { users: userIdToAdd } },
+      { new: true }
+    ).populate('users', '-password');
+    return updated;
+  },
+
+  // Get participants
+  getParticipants: async (chatId: string) => {
+    const chat = await Conversation.findById(chatId).populate('users', '-password');
+    if (!chat) throw new AppError('Conversation not found', 404);
+    
+    return chat.users.map((user: any) => ({
+      userId: user._id.toString(),
+      fullName: user.fullName,
+      email: user.email,
+      role: chat.groupAdmins.some(adminId => adminId.toString() === user._id.toString()) ? 'admin' : 'member'
+    }));
   }
 };

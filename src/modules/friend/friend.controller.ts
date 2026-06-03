@@ -1,9 +1,14 @@
 import { Request, Response } from "express";
+import { Server } from "socket.io";
 import {
   sendFriendRequestService,
   acceptFriendRequestService,
   declineFriendRequestService,
-  getFriendsService
+  getFriendsService,
+  getPendingFriendRequestsService,
+  getFriendStatusService,
+  cancelFriendRequestService,
+  unfriendService
 } from "./friend.service";
 
 const getErrorMessage = (err: unknown): string => {
@@ -28,8 +33,9 @@ export const sendFriendRequest = async (req: Request, res: Response) => {
     }
 
     const request = await sendFriendRequestService(requester, recipient);
+    const io = req.app.get("io") as Server | undefined;
 
-    req.io?.to(recipient).emit("friend_request", {
+    io?.to(recipient).emit("friend_request", {
       from: requester,
       requestId: request._id
     });
@@ -54,7 +60,8 @@ export const acceptFriendRequest = async (req: Request, res: Response) => {
     const { request, conversation } =
       await acceptFriendRequestService(requestId);
 
-    req.io?.to(request.requester.toString()).emit("friend_accepted", {
+    const io = req.app.get("io") as Server | undefined;
+    io?.to(request.requester.toString()).emit("friend_accepted", {
       conversationId: (conversation as any)._id
     });
 
@@ -84,9 +91,9 @@ export const declineFriendRequest = async (
     }
 
     const request = await declineFriendRequestService(requestId);
+    const io = req.app.get("io") as Server | undefined;
 
-    // optional socket event
-    req.io?.to(request.requester.toString()).emit(
+    io?.to(request.requester.toString()).emit(
       "friend_declined",
       {
         requestId: request._id
@@ -121,5 +128,72 @@ export const getFriends = async (req: Request, res: Response) => {
     return res.status(400).json({
       message: getErrorMessage(err)
     });
+  }
+};
+
+export const getFriendRequests = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const requests = await getPendingFriendRequestsService(req.user.userId);
+    return res.json({ success: true, data: requests });
+  } catch (err) {
+    return res.status(400).json({ message: getErrorMessage(err) });
+  }
+};
+
+export const getFriendStatus = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { targetUserId } = req.params;
+    if (!targetUserId) {
+      return res.status(400).json({ message: "targetUserId is required" });
+    }
+
+    const status = await getFriendStatusService(req.user.userId, targetUserId);
+    return res.json({ success: true, data: { status } });
+  } catch (err) {
+    return res.status(400).json({ message: getErrorMessage(err) });
+  }
+};
+
+export const cancelFriendRequest = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { recipient } = req.body;
+    if (!recipient) {
+      return res.status(400).json({ message: "recipient is required" });
+    }
+
+    await cancelFriendRequestService(req.user.userId, recipient);
+    return res.json({ success: true, message: "Request cancelled" });
+  } catch (err) {
+    return res.status(400).json({ message: getErrorMessage(err) });
+  }
+};
+
+export const unfriend = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const friendId = req.params.friendId;
+    if (!friendId) {
+      return res.status(400).json({ message: "friendId is required" });
+    }
+
+    await unfriendService(req.user.userId, friendId);
+    return res.json({ success: true, message: "Friend removed" });
+  } catch (err) {
+    return res.status(400).json({ message: getErrorMessage(err) });
   }
 };

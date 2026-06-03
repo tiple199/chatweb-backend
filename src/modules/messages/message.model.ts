@@ -1,12 +1,19 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
+
 export interface IMessage extends Document {
   sender: Types.ObjectId;
   content: string;
   conversationId: Types.ObjectId;
   messageType: 'text' | 'image' | 'video' | 'file';
-  fileUrl?: string; // Link file/ảnh/video lưu trên Cloudinary/S3
+  fileUrl?: string;
   fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+  isDeletedBySender?: boolean;
+  isDeletedForAll?: boolean;
+  deletedAt?: Date;
+  replyToMessageId?: Types.ObjectId;
 }
 
 const messageSchema = new Schema<IMessage>(
@@ -20,7 +27,13 @@ const messageSchema = new Schema<IMessage>(
       default: 'text' 
     },
     fileUrl: { type: String },
-    fileName: { type: String }
+    fileName: { type: String },
+    fileSize: { type: Number },
+    mimeType: { type: String },
+    isDeletedBySender: { type: Boolean, default: false },
+    isDeletedForAll: { type: Boolean, default: false },
+    deletedAt: { type: Date },
+    replyToMessageId: { type: Schema.Types.ObjectId, ref: 'Message' }
   },
   { timestamps: true }
 );

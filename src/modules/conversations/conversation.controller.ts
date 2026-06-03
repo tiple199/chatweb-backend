@@ -51,3 +51,50 @@ export const votePoll = asyncHandle(async (req: AuthRequest, res: Response) => {
   const chat = await conversationService.votePoll(chatId, pollId, optionId, req.user.userId);
   res.status(200).json({ success: true, data: chat });
 });
+
+// Update conversation details
+export const updateConversation = asyncHandle(async (req: AuthRequest, res: Response) => {
+  const id = req.params.id as string;
+  const data = req.body;
+  const requesterId = req.user?.userId;
+  
+  if (!requesterId) throw new AppError('Unauthorized', 401);
+
+  const chat = await conversationService.updateConversation(id, data, requesterId);
+  res.status(200).json({ success: true, data: chat });
+});
+
+// Get participants
+export const getParticipants = asyncHandle(async (req: AuthRequest, res: Response) => {
+  const conversationId = req.params.conversationId as string;
+  const requesterId = req.user?.userId;
+  
+  if (!requesterId) throw new AppError('Unauthorized', 401);
+
+  const participants = await conversationService.getParticipants(conversationId);
+  res.status(200).json(participants); // frontend expects raw array based on api definition
+});
+
+// Add member to group
+export const addMember = asyncHandle(async (req: AuthRequest, res: Response) => {
+  const conversationId = req.params.conversationId as string;
+  const { userId } = req.body;
+  const requesterId = req.user?.userId;
+  
+  if (!requesterId) throw new AppError('Unauthorized', 401);
+
+  const chat = await conversationService.addMember(conversationId, userId, requesterId);
+  res.status(200).json({ success: true, data: chat });
+});
+
+// Remove member from group
+export const removeMember = asyncHandle(async (req: AuthRequest, res: Response) => {
+  const conversationId = req.params.conversationId as string;
+  const userId = req.params.userId as string;
+  const requesterId = req.user?.userId;
+  
+  if (!requesterId) throw new AppError('Unauthorized', 401);
+
+  const chat = await conversationService.removeFromGroup(conversationId, userId, requesterId);
+  res.status(200).json({ success: true, data: chat });
+});

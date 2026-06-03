@@ -26,6 +26,72 @@ export const sendFriendRequestService = async (
   return FriendModel.create({ requester, recipient });
 };
 
+export const getPendingFriendRequestsService = async (userId: string) => {
+  return FriendModel.find({ recipient: userId, status: "pending" }).populate(
+    "requester",
+    "-password"
+  );
+};
+
+export const getFriendStatusService = async (
+  userId: string,
+  targetUserId: string
+) => {
+  if (userId === targetUserId) {
+    return "friends";
+  }
+
+  const relation = await FriendModel.findOne({
+    $or: [
+      { requester: userId, recipient: targetUserId },
+      { requester: targetUserId, recipient: userId }
+    ]
+  });
+
+  if (!relation) return "none";
+  if (relation.status === "accepted") return "friends";
+  if (relation.status === "pending") {
+    return relation.requester.toString() === userId ? "pending_sent" : "pending_received";
+  }
+
+  return "none";
+};
+
+export const cancelFriendRequestService = async (
+  requester: string,
+  recipient: string
+) => {
+  const request = await FriendModel.findOneAndDelete({
+    requester,
+    recipient,
+    status: "pending"
+  });
+
+  if (!request) {
+    throw new Error("Friend request not found or already processed");
+  }
+
+  return request;
+};
+
+export const unfriendService = async (
+  userId: string,
+  friendId: string
+) => {
+  const friendship = await FriendModel.findOneAndDelete({
+    $or: [
+      { requester: userId, recipient: friendId, status: "accepted" },
+      { requester: friendId, recipient: userId, status: "accepted" }
+    ]
+  });
+
+  if (!friendship) {
+    throw new Error("Friendship not found");
+  }
+
+  return friendship;
+};
+
 /**
  * Accept friend request
  */
@@ -69,8 +135,15 @@ export const declineFriendRequestService = async (
  * Get friend list
  */
 export const getFriendsService = async (userId: string) => {
-  return FriendModel.find({
+  const friendships = await FriendModel.find({
     $or: [{ requester: userId }, { recipient: userId }],
     status: "accepted"
   }).populate("requester recipient");
+
+  return friendships.map(f => {
+    // Return the user that is not the current user
+    const requester = f.requester as any;
+    const recipient = f.recipient as any;
+    return requester._id.toString() === userId.toString() ? recipient : requester;
+  });
 };

@@ -6,7 +6,7 @@ import errorHandler from "./middlewares/error.middleware";
 
 import authRoute from "./modules/auth/auth.route";
 import userRoute from "./modules/users/user.route";
-import messageRoute from "./modules/messages/messages.routes"; 
+import messageRoute from "./modules/messages/message.route"; 
 
 import searchRoute from "./modules/search/search.route";
 import conversationRoute from "./modules/conversations/conversation.route";
@@ -35,7 +35,7 @@ userRoute(app);
 conversationRoute(app);
 app.use("/api/search", searchRoute);
 app.use("/api/friend", friendRoute);
-messageRoute(app); 
+app.use("/api/messages", messageRoute); 
 
 //debug
 debugRoute(app);

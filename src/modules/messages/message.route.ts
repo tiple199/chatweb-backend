@@ -1,13 +1,16 @@
 import express from 'express';
-import { sendMessage, allMessages } from './message.controller';
+import { sendMessage, getHistory, searchMessages } from './message.controller';
 import { checkValidJWT } from '../../middlewares/jwt.middleware';
+import { uploadLocal } from '../../config/multer';
 
 const router = express.Router();
 
-// Sử dụng đúng tên middleware của bạn để bảo vệ route[cite: 8]
 router.use(checkValidJWT);
 
-router.post('/', sendMessage);
-router.get('/:chatId', allMessages);
+// Sử dụng uploadLocal để parse file
+router.post('/', uploadLocal.single('file'), sendMessage);
+
+router.get('/search', searchMessages);
+router.get('/:conversationId', getHistory);
 
 export default router;

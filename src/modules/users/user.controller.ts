@@ -34,12 +34,11 @@ const updateAvatar = asyncHandler(async (req: AuthRequest, res: Response) => {
 
     // 3. Lấy user cũ để xóa file avatar cũ
     const oldUser = await UserModel.findById(userId);
-    
-    // 4. Lưu relative path (không full URL) - để flexible khi migrate server
-    // Ví dụ: /uploads/avatars/avatar-xxx.jpg
+
+    // Lấy URL local
     const avatarPath = `/uploads/avatars/${req.file.filename}`;
     
-    // 5. Cập nhật vào Database
+    // Cập nhật vào Database
     const updatedUser = await UserModel.findByIdAndUpdate(
         userId,
         { avatar: avatarPath },
@@ -53,21 +52,18 @@ const updateAvatar = asyncHandler(async (req: AuthRequest, res: Response) => {
     // 6. Xóa file avatar cũ (cleanup)
     if (oldUser?.avatar) {
         try {
-            // Giả sử avatar cũ là relative path hoặc filename
             let oldFilePath = oldUser.avatar;
-            // Nếu là full URL, extract filename
             if (oldFilePath.startsWith('http')) {
                 oldFilePath = oldFilePath.split('/uploads/')[1];
                 oldFilePath = `uploads/${oldFilePath}`;
             } else if (oldFilePath.startsWith('/uploads/')) {
-                oldFilePath = oldFilePath.substring(1); // Remove leading /
+                oldFilePath = oldFilePath.substring(1); 
             }
             
             if (fs.existsSync(oldFilePath)) {
                 fs.unlinkSync(oldFilePath);
             }
         } catch (error) {
-            // Log error nhưng không throw - file cleanup không nên block update
             console.error("Error deleting old avatar:", error);
         }
     }

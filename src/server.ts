@@ -21,6 +21,8 @@ const startServer = async () => {
       }
     });
 
+    app.set("io", io);
+
     initSockets(io);
 
     const port = Number(process.env.PORT) || 5000;

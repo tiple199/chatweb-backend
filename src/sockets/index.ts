@@ -43,15 +43,19 @@ export const initSockets = (io: Server) => {
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.data.userId);
 
+    if (socket.data.userId) {
+      socket.join(socket.data.userId);
+    }
+
     const ctx: SocketContext = { io, socket };
 
     registerRoomHandlers(ctx);
     registerMessageHandlers(ctx);
     registerTypingHandlers(ctx);
     registerSeenHandlers(ctx);
-  });
 
-  io.on("disconnect", (socket) => {
-    console.log("Disconnected:", socket.data.userId);
+    socket.on("disconnect", (reason) => {
+      console.log("Client disconnected:", socket.data.userId, reason);
+    });
   });
 };
