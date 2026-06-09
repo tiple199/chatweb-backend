@@ -60,3 +60,11 @@ export const createPrivateConversation = async (req: Request, res: Response) => 
         }
     });
 }
+
+export const deleteAllConversations = async (req: Request, res: Response) => {
+    await ConversationModel.deleteMany({});
+    return res.status(200).json({
+        success: true,
+        message: "All conversations have been deleted"
+    });
+}

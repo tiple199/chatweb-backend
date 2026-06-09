@@ -6,6 +6,7 @@ import AppError from '../../utils/appError';
 import { Server } from "socket.io";
 import { ConversationModel } from "../conversations/conversation.model";
 import mongoose from "mongoose";
+import { attachmentUploadService } from "../uploads/attachment-upload.service";
 
 export const sendMessage = asyncHandle(async (req: AuthRequest, res: Response) => {
   const { ConversationId, Content } = req.body;
@@ -43,23 +44,22 @@ export const sendMessage = asyncHandle(async (req: AuthRequest, res: Response) =
 
   let messageType: 'text' | 'image' | 'video' | 'file' = 'text';
   let fileUrl: string | undefined;
+  let fileProvider: string | undefined;
+  let filePublicId: string | undefined;
   let fileName: string | undefined;
   let fileSize: number | undefined;
   let mimeType: string | undefined;
 
   if (req.file) {
-    mimeType = req.file.mimetype;
-    fileName = req.file.originalname;
-    fileSize = req.file.size;
-    fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-    
-    if (mimeType.startsWith("image/")) {
-      messageType = "image";
-    } else if (mimeType.startsWith("video/")) {
-      messageType = "video";
-    } else {
-      messageType = "file";
-    }
+    const uploadedFile = await attachmentUploadService.uploadAttachment(conversationId, req.file);
+
+    mimeType = uploadedFile.mimeType;
+    fileName = uploadedFile.originalName;
+    fileSize = uploadedFile.size;
+    fileUrl = uploadedFile.url;
+    fileProvider = uploadedFile.provider;
+    filePublicId = uploadedFile.storageKey;
+    messageType = uploadedFile.attachmentKind;
   }
 
   const message = await messageService.sendMessage(
@@ -68,6 +68,8 @@ export const sendMessage = asyncHandle(async (req: AuthRequest, res: Response) =
     content, 
     messageType, 
     fileUrl,
+    fileProvider,
+    filePublicId,
     fileName,
     fileSize,
     mimeType

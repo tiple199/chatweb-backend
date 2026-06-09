@@ -1,5 +1,5 @@
 import express, { Express } from "express";
-import { getAllUsers, getAllConversations, createPrivateConversation} from "./debug.controller";
+import { getAllUsers, getAllConversations, createPrivateConversation, deleteAllConversations} from "./debug.controller";
 import { get } from "mongoose";
     
 
@@ -10,6 +10,7 @@ const debugUserRoute = (app: Express) => {
 
     router.get("/conversations", getAllConversations);
     router.post("/conversations/new", createPrivateConversation);
+    router.post("/conversations/clear", deleteAllConversations);
 
     app.use("/api/debug", router);
 }

@@ -1,14 +1,14 @@
 import express from 'express';
 import { sendMessage, getHistory, searchMessages } from './message.controller';
 import { checkValidJWT } from '../../middlewares/jwt.middleware';
-import { uploadLocal } from '../../config/multer';
+import { attachmentUpload } from '../../config/multer';
 
 const router = express.Router();
 
 router.use(checkValidJWT);
 
-// Sử dụng uploadLocal để parse file
-router.post('/', uploadLocal.single('file'), sendMessage);
+// Sử dụng attachmentUpload để parse file bằng memory storage
+router.post('/', attachmentUpload.single('file'), sendMessage);
 
 router.get('/search', searchMessages);
 router.get('/:conversationId', getHistory);

@@ -3,8 +3,7 @@ import { Request, Response } from "express";
 import { UserModel } from "./user.model";
 import asyncHandler from "@/utils/asyncHandle";
 import { AuthRequest } from "@/types/custom";
-import fs from "fs";
-import path from "path";
+import { avatarUploadService } from "../uploads/avatar-upload.service";
 
 // API lấy profile người dùng
 const getUser = (req: AuthRequest, res: Response) => {
@@ -31,49 +30,15 @@ const updateAvatar = asyncHandler(async (req: AuthRequest, res: Response) => {
     }
 
     const userId = req.user.userId;
-
-    // 3. Lấy user cũ để xóa file avatar cũ
-    const oldUser = await UserModel.findById(userId);
-
-    // Lấy URL local
-    const avatarPath = `/uploads/avatars/${req.file.filename}`;
-    
-    // Cập nhật vào Database
-    const updatedUser = await UserModel.findByIdAndUpdate(
-        userId,
-        { avatar: avatarPath },
-        { new: true, runValidators: true }
-    ).select("-password");
-
-    if (!updatedUser) {
-        throw new AppError("Không tìm thấy người dùng.", 404);
-    }
-
-    // 6. Xóa file avatar cũ (cleanup)
-    if (oldUser?.avatar) {
-        try {
-            let oldFilePath = oldUser.avatar;
-            if (oldFilePath.startsWith('http')) {
-                oldFilePath = oldFilePath.split('/uploads/')[1];
-                oldFilePath = `uploads/${oldFilePath}`;
-            } else if (oldFilePath.startsWith('/uploads/')) {
-                oldFilePath = oldFilePath.substring(1); 
-            }
-            
-            if (fs.existsSync(oldFilePath)) {
-                fs.unlinkSync(oldFilePath);
-            }
-        } catch (error) {
-            console.error("Error deleting old avatar:", error);
-        }
-    }
+    const result = await avatarUploadService.uploadAvatar(userId, req.file);
 
     // 7. Trả về kết quả
     return res.status(200).json({
         success: true,
         message: "Cập nhật ảnh đại diện thành công",
         data: {
-            user: updatedUser
+            user: result.user,
+            upload: result.upload
         }
     });
 });
