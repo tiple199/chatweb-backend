@@ -1,5 +1,6 @@
 import { MessageModel } from "./message.model";
 import { ConversationModel } from "../conversations/conversation.model";
+import { eventBus, EVENTS } from "../../core/event-bus";
 
 export const messageService = {
   sendMessage: async (
@@ -23,10 +24,16 @@ export const messageService = {
       mimeType
     });
 
-    const populatedMessage = await newMessage.populate('sender', 'fullName avatar email');
+    const populatedMessage = await newMessage.populate([
+      { path: 'sender', select: 'fullName avatar email' },
+      { path: 'readBy', select: 'fullName avatar' }
+    ]);
 
     // Cập nhật tin nhắn mới nhất cho đoạn chat
     await ConversationModel.findByIdAndUpdate(conversationId, { latestMessage: populatedMessage._id });
+
+    // Observer: Phát sự kiện sau khi lưu data thành công
+    eventBus.emit(EVENTS.MESSAGE_CREATED, populatedMessage);
 
     return populatedMessage;
   },
@@ -44,6 +51,7 @@ export const messageService = {
       .skip(skip)
       .limit(limit)
       .populate("sender", "fullName avatar email")
+      .populate("readBy", "fullName avatar")
       .lean(); // Use lean for plain JS objects, faster response
 
     // Count total messages to calculate total pages
@@ -71,8 +79,25 @@ export const messageService = {
     const messages = await MessageModel.find(filter)
       .sort({ createdAt: -1 })
       .populate("sender", "fullName avatar email")
+      .populate("readBy", "fullName avatar")
       .lean();
 
     return messages;
+  },
+
+  markMessagesAsRead: async (conversationId: string, userId: string) => {
+    // Tìm các tin nhắn trong cuộc trò chuyện, được gửi bởi người khác và chưa được đọc bởi user này
+    const result = await MessageModel.updateMany(
+      { 
+        conversationId, 
+        sender: { $ne: userId }, 
+        readBy: { $ne: userId } 
+      },
+      { 
+        $push: { readBy: userId } 
+      }
+    );
+
+    return result.modifiedCount > 0;
   }
 };

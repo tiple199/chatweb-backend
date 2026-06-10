@@ -109,7 +109,7 @@ export const registerMessageHandlers = ({ io, socket }: SocketContext) => {
           type: messageObject.messageType
         };
 
-        io.to(conversationId).emit("receive_message", message);
+        // Note: RealtimeMediator will handle the broadcast via EventBus
         ack?.({ ok: true, data: { message } });
       } catch (error) {
         console.error("Lỗi khi gửi tin nhắn:", error);

@@ -5,7 +5,7 @@ export interface IMessage extends Document {
   sender: Types.ObjectId;
   content: string;
   conversationId: Types.ObjectId;
-  messageType: 'text' | 'image' | 'video' | 'file';
+  messageType: 'text' | 'image' | 'video' | 'file' | 'system' | 'poll';
   fileUrl?: string;
   fileName?: string;
   fileSize?: number;
@@ -14,6 +14,7 @@ export interface IMessage extends Document {
   isDeletedForAll?: boolean;
   deletedAt?: Date;
   replyToMessageId?: Types.ObjectId;
+  readBy: Types.ObjectId[];
 }
 
 const messageSchema = new Schema<IMessage>(
@@ -23,7 +24,7 @@ const messageSchema = new Schema<IMessage>(
     conversationId: { type: Schema.Types.ObjectId, ref: 'Conversation', required: true },
     messageType: { 
       type: String, 
-      enum: ['text', 'image', 'video', 'file'], 
+      enum: ['text', 'image', 'video', 'file', 'system', 'poll'], 
       default: 'text' 
     },
     fileUrl: { type: String },
@@ -33,7 +34,8 @@ const messageSchema = new Schema<IMessage>(
     isDeletedBySender: { type: Boolean, default: false },
     isDeletedForAll: { type: Boolean, default: false },
     deletedAt: { type: Date },
-    replyToMessageId: { type: Schema.Types.ObjectId, ref: 'Message' }
+    replyToMessageId: { type: Schema.Types.ObjectId, ref: 'Message' },
+    readBy: [{ type: Schema.Types.ObjectId, ref: 'User' }]
   },
   { timestamps: true }
 );

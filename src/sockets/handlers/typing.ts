@@ -25,7 +25,8 @@ export const registerTypingHandlers = ({ socket }: SocketContext) => {
 
     socket.to(roomId).emit(event, {
       roomId,
-      fromSocketId: socket.id
+      fromSocketId: socket.id,
+      userId: socket.data?.userId
     });
 
     ack?.({ ok: true, data: { ok: true } });

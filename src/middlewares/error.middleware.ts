@@ -22,7 +22,8 @@ const errorHandler = (
   //  lỗi không xác định
   return res.status(500).json({
     success: false,
-    message: "Internal Server Error",
+    message: err instanceof Error ? err.message : String(err),
+    stack: err instanceof Error ? err.stack : String(err)
   });
 };
 

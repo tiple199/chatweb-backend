@@ -140,10 +140,12 @@ export const getFriendsService = async (userId: string) => {
     status: "accepted"
   }).populate("requester recipient");
 
-  return friendships.map(f => {
-    // Return the user that is not the current user
-    const requester = f.requester as any;
-    const recipient = f.recipient as any;
-    return requester._id.toString() === userId.toString() ? recipient : requester;
-  });
+  return friendships
+    .filter(f => f.requester && f.recipient)
+    .map(f => {
+      // Return the user that is not the current user
+      const requester = f.requester as any;
+      const recipient = f.recipient as any;
+      return requester._id.toString() === userId.toString() ? recipient : requester;
+    });
 };
