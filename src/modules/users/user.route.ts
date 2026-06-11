@@ -3,7 +3,7 @@ import { AsyncHandler } from "@/types/asyncHandler";
 import asyncHandler from "@/utils/asyncHandle";
 import { getUser, updateAvatar, searchUsers} from "./user.controller"; // Import thêm updateAvatar
 import { checkValidJWT } from "@/middlewares/jwt.middleware";
-import { uploadLocal } from "@/config/multer"; // Import middleware upload file local
+import { avatarUpload } from "@/config/multer"; // Upload ảnh đại diện bằng memory storage
 
 const router = express.Router();
 const wrap = (fn: AsyncHandler) => asyncHandler(fn);
@@ -13,11 +13,11 @@ const userRoute = (app: Express) => {
     router.get("/profile", checkValidJWT, getUser);
 
     // API cập nhật ảnh đại diện (giống Telegram)
-    // uploadLocal.single("avatar") sẽ xử lý file gửi lên với key là 'avatar'
+    // avatarUpload.single("avatar") sẽ xử lý file gửi lên với key là 'avatar'
     router.post(
         "/update-avatar", 
         checkValidJWT, 
-        uploadLocal.single("avatar"), 
+        avatarUpload.single("avatar"), 
         updateAvatar
     );
 

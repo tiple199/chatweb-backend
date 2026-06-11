@@ -7,6 +7,8 @@ export interface IMessage extends Document {
   conversationId: Types.ObjectId;
   messageType: 'text' | 'image' | 'video' | 'file' | 'system' | 'poll';
   fileUrl?: string;
+  fileProvider?: string;
+  filePublicId?: string;
   fileName?: string;
   fileSize?: number;
   mimeType?: string;
@@ -28,6 +30,8 @@ const messageSchema = new Schema<IMessage>(
       default: 'text' 
     },
     fileUrl: { type: String },
+    fileProvider: { type: String, default: "local" },
+    filePublicId: { type: String, default: "" },
     fileName: { type: String },
     fileSize: { type: Number },
     mimeType: { type: String },

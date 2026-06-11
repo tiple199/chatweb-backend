@@ -9,6 +9,8 @@ export const messageService = {
     content: string, 
     messageType: 'text' | 'image' | 'video' | 'file',
     fileUrl?: string,
+    fileProvider?: string,
+    filePublicId?: string,
     fileName?: string,
     fileSize?: number,
     mimeType?: string
@@ -19,6 +21,8 @@ export const messageService = {
       conversationId,
       messageType,
       fileUrl,
+      fileProvider,
+      filePublicId,
       fileName,
       fileSize,
       mimeType

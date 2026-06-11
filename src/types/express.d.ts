@@ -21,6 +21,7 @@ declare global {
         destination: string;
         filename: string;
         path: string;
+        buffer?: Buffer;
       }
     }
   }

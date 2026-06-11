@@ -2,6 +2,9 @@ import { Response } from 'express';
 import { AuthRequest } from '../../types/custom';
 import { messageService } from './message.service';
 import asyncHandle from '../../utils/asyncHandle';
+import AppError from '../../utils/appError';
+import { attachmentUploadService } from "../uploads/attachment-upload.service";
+import fs from 'fs';
 
 export const sendMessage = asyncHandle(async (req: AuthRequest, res: Response) => {
   // Lấy dữ liệu đã được làm sạch từ RequestHandler Pipeline
@@ -10,23 +13,40 @@ export const sendMessage = asyncHandle(async (req: AuthRequest, res: Response) =
   
   let messageType: 'text' | 'image' | 'video' | 'file' = 'text';
   let fileUrl: string | undefined;
+  let fileProvider: string | undefined;
+  let filePublicId: string | undefined;
   let fileName: string | undefined;
   let fileSize: number | undefined;
   let mimeType: string | undefined;
 
   if (req.file) {
-    mimeType = req.file.mimetype;
-    fileName = req.file.originalname;
-    fileSize = req.file.size;
-    fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-    
-    if (mimeType.startsWith("image/")) {
-      messageType = "image";
-    } else if (mimeType.startsWith("video/")) {
-      messageType = "video";
+    // Ensure we provide an UploadFile shape with required buffer
+    const file = req.file as any;
+    let buffer: Buffer;
+    if (file.buffer) {
+      buffer = file.buffer as Buffer;
+    } else if (file.path) {
+      buffer = await fs.promises.readFile(file.path);
     } else {
-      messageType = "file";
+      throw new AppError('Uploaded file has no buffer or path', 400);
     }
+
+    const uploadArg = {
+      buffer,
+      originalname: file.originalname || file.filename,
+      mimetype: file.mimetype,
+      size: file.size,
+    } as any;
+
+    const uploadedFile = await attachmentUploadService.uploadAttachment(conversationId, uploadArg);
+
+    mimeType = uploadedFile.mimeType;
+    fileName = uploadedFile.originalName;
+    fileSize = uploadedFile.size;
+    fileUrl = uploadedFile.url;
+    fileProvider = uploadedFile.provider;
+    filePublicId = uploadedFile.storageKey;
+    messageType = uploadedFile.attachmentKind;
   }
 
   const message = await messageService.sendMessage(
@@ -35,6 +55,8 @@ export const sendMessage = asyncHandle(async (req: AuthRequest, res: Response) =
     content, 
     messageType, 
     fileUrl,
+    fileProvider,
+    filePublicId,
     fileName,
     fileSize,
     mimeType
